@@ -13,7 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // Buscar ativos do usuário
   const { data: userAtivos, error: ativosError } = await supabaseAdmin
     .from('registros_main')
-    .select('ativo, valor, rendimento_diario, data_compra')
+    .select('id, ativo, valor, rendimento_diario, data_compra, last_yield_calculated')
     .eq('user_id', userId);
 
   if (ativosError) {
@@ -21,51 +21,51 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: 'Erro ao buscar ativos do usuário.' });
   }
 
-  // Calcular rendimento total dos ativos
   let totalRendimento = 0;
-  userAtivos.forEach((ativo) => {
-    const daysHeld = Math.floor((new Date().getTime() - new Date(ativo.data_compra).getTime()) / (1000 * 60 * 60 * 24));
-    const rendimento = ativo.valor * (ativo.rendimento_diario / 100) * daysHeld;
-    totalRendimento += rendimento;
-  });
 
-  // Calcular rendimento dos convites
-  const { data: invitedUsers, error: invitedUsersError } = await supabaseAdmin
-    .from('user_convites')
-    .select('rendimento')
-    .eq('user_id', userId);
+  for (const ativo of userAtivos) {
+    let lastYieldDate = ativo.last_yield_calculated ? new Date(ativo.last_yield_calculated) : new Date(ativo.data_compra);
+    const currentDate = new Date();
 
-  if (invitedUsersError) {
-    console.error('Erro ao buscar convites do usuário:', invitedUsersError);
-    return res.status(500).json({ error: 'Erro ao buscar convites do usuário.' });
+    // Evitar datas futuras
+    if (lastYieldDate > currentDate) {
+      lastYieldDate = currentDate;
+    }
+
+    const timeDiff = currentDate.getTime() - lastYieldDate.getTime();
+    const daysSinceLastYield = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+
+    const rendimentoDiario = parseFloat(ativo.rendimento_diario);
+
+    if (!isNaN(rendimentoDiario) && daysSinceLastYield > 0) {
+      const rendimento = rendimentoDiario * daysSinceLastYield;
+      totalRendimento += rendimento;
+
+      // Atualizar last_yield_calculated
+      const { error: updateAtivoError } = await supabaseAdmin
+        .from('registros_main')
+        .update({ last_yield_calculated: currentDate.toISOString() })
+        .eq('id', ativo.id);
+
+      if (updateAtivoError) {
+        console.error('Erro ao atualizar last_yield_calculated:', updateAtivoError);
+      }
+    }
   }
 
-  let rendimentoExtra = 0;
-  const numConvites = invitedUsers.length;
-
-  if (numConvites === 1) {
-    rendimentoExtra = 0.001; // 0,10%
-  } else if (numConvites === 2) {
-    rendimentoExtra = 0.002; // 0,20%
-  } else if (numConvites >= 3) {
-    rendimentoExtra = 0.0025; // 0,25%
-  }
-
-  // Aplicar rendimento extra ao saldo inicial
+  // Atualizar saldo do usuário
   const { data: userData, error: userError } = await supabaseAdmin
     .from('user_profile')
     .select('saldo_inicial')
     .eq('uuid', userId)
     .single();
 
-  if (userError) {
+  if (userError || !userData) {
     console.error('Erro ao buscar dados do usuário:', userError);
     return res.status(500).json({ error: 'Erro ao buscar dados do usuário.' });
   }
 
-  const rendimentoConvites = userData.saldo_inicial * rendimentoExtra;
-
-  const novoSaldo = userData.saldo_inicial + totalRendimento + rendimentoConvites;
+  const novoSaldo = userData.saldo_inicial + totalRendimento;
 
   const { error: updateError } = await supabaseAdmin
     .from('user_profile')

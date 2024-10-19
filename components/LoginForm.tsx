@@ -53,7 +53,7 @@ const LoginForm: React.FC = () => {
 
   return (
     <form onSubmit={handleLogin} className="space-y-4">
-      <h2 className="text-2xl font-bold text-center text-white">Login</h2>
+      <h2 className="text-2xl font-bold text-center text-black">Login</h2>
 
       {errors && <p className="text-red-500 text-sm">{errors}</p>}
 
@@ -63,7 +63,7 @@ const LoginForm: React.FC = () => {
         placeholder="Telefone"
         value={form.telefone}
         onChange={handleChange}
-        className="w-full px-3 py-2 rounded bg-white bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2 rounded bg-white bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
       />
 
       <input
@@ -72,18 +72,18 @@ const LoginForm: React.FC = () => {
         placeholder="Senha"
         value={form.senha}
         onChange={handleChange}
-        className="w-full px-3 py-2 rounded bg-white bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2 rounded bg-white bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
       />
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-300"
+        className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-300 text-black"
       >
         {loading ? 'Entrando...' : 'Login'}
       </button>
 
-      <p className="text-center text-white">
+      <p className="text-center text-black">
         Não tem uma conta?{' '}
         <Link href="/register" className="text-blue-300 hover:underline">
           Registre-se

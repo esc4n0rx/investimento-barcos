@@ -142,7 +142,7 @@ const RegisterForm: React.FC = () => {
 
   return (
     <form onSubmit={handleRegistro} className="space-y-4">
-      <h2 className="text-2xl font-bold text-center text-white">Registrar</h2>
+      <h2 className="text-2xl font-bold text-center text-black">Registrar</h2>
 
       {errors && <p className="text-red-500 text-sm">{errors}</p>}
 
@@ -152,7 +152,7 @@ const RegisterForm: React.FC = () => {
         placeholder="Nome"
         value={form.nome}
         onChange={handleChange}
-        className="w-full px-3 py-2 rounded bg-white bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2 rounded bg-white bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
       />
 
       <input
@@ -161,7 +161,7 @@ const RegisterForm: React.FC = () => {
         placeholder="Telefone"
         value={form.telefone}
         onChange={handleChange}
-        className="w-full px-3 py-2 rounded bg-white bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2 rounded bg-white bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500  text-black"
       />
 
       <input
@@ -170,7 +170,7 @@ const RegisterForm: React.FC = () => {
         placeholder="Senha"
         value={form.senha}
         onChange={handleChange}
-        className="w-full px-3 py-2 rounded bg-white bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2 rounded bg-white bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500  text-black"
       />
 
       <input
@@ -179,7 +179,7 @@ const RegisterForm: React.FC = () => {
         placeholder="Confirme a Senha"
         value={form.confirmaSenha}
         onChange={handleChange}
-        className="w-full px-3 py-2 rounded bg-white bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2 rounded bg-white bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500  text-black"
       />
 
       <input
@@ -188,13 +188,13 @@ const RegisterForm: React.FC = () => {
         placeholder="Código de Convite (Opcional)"
         value={form.codigoConvite}
         onChange={handleChange}
-        className="w-full px-3 py-2 rounded bg-white bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2 rounded bg-white bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500  text-black"
       />
 
       <div className="flex flex-wrap items-center space-x-2">
-        <span className="text-white">Captcha:</span>
+        <span className="text-black">Captcha:</span>
         <div className="bg-gray-700 bg-opacity-50 rounded px-3 py-1">
-          <span className="text-white font-bold">{captchaValue}</span>
+          <span className="text-black font-bold">{captchaValue}</span>
         </div>
         <input
           type="text"
@@ -202,19 +202,19 @@ const RegisterForm: React.FC = () => {
           placeholder="Digite o captcha"
           value={form.captcha}
           onChange={handleChange}
-          className="flex-1 min-w-[120px] px-2 py-2 rounded bg-white bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 min-w-[120px] px-2 py-2 rounded bg-white bg-opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500  text-black"
         />
       </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-300"
+        className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition duration-300  text-black"
       >
         {loading ? 'Registrando...' : 'Registrar'}
       </button>
 
-      <p className="text-center text-white">
+      <p className="text-center text-black">
         Já tem uma conta?{' '}
         <Link href="/login" className="text-blue-300 hover:underline">Faça login</Link>
       </p>
