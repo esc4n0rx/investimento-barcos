@@ -216,9 +216,7 @@ const RegisterForm: React.FC = () => {
 
       <p className="text-center text-white">
         Já tem uma conta?{' '}
-        <Link href="/login">
-          <a className="text-blue-300 hover:underline">Faça login</a>
-        </Link>
+        <Link href="/login" className="text-blue-300 hover:underline">Faça login</Link>
       </p>
     </form>
   );
