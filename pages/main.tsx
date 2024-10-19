@@ -264,7 +264,7 @@ const Main: React.FC = () => {
         Seu link de convite:
       </p>
       <div className="bg-gray-100 p-2 rounded mb-4">
-        <p className="text-blue-500">{`http://localhost:3000/register?codigoConvite=${userData?.convite_new}`}</p>
+        <p className="text-blue-500">{`https://boatvest.vercel.app/register?codigoConvite=${userData?.convite_new}`}</p>
       </div>
       <div className="bg-gray-100 p-2 rounded mt-4">
         <p>1 convite gera 0,10% de rendimento</p>
