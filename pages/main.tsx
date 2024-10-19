@@ -27,10 +27,11 @@ interface PurchasedAtivo {
 }
 
 interface InvitedUser {
-  nome: string;
-  telefone: string;
+  invited_user_nome: string;
+  invited_user_telefone: string;
   rendimento: number;
 }
+
 
 const Main: React.FC = () => {
   const router = useRouter();
