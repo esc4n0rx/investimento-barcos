@@ -13,7 +13,7 @@
     "@supabase/supabase-js": "^2.45.4",
     "framer-motion": "^11.11.9",
     "investimento-barcos": "file:",
-    "mercadopago": "^2.0.15",
+    "mercadopago": "^1.5.10",
     "next": "14.2.15",
     "nodemailer": "^6.9.15",
     "react": "^18",

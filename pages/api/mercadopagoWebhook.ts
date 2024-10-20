@@ -1,40 +1,50 @@
-// pages/api/mercadopagoWebhook.ts
-
-import type { NextApiRequest, NextApiResponse } from 'next';
 import mercadopago from 'mercadopago';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabaseAdmin } from '../../utils/supabaseAdmin';
 
-// Configure Mercado Pago SDK
 mercadopago.configure({
   access_token: process.env.MERCADO_PAGO_ACCESS_TOKEN || '',
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método não permitido' });
+  console.log('Webhook received. Method:', req.method);
+
+  // Accept both POST and GET requests for testing purposes
+  if (req.method !== 'POST' && req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const payment = req.body;
+  // Parse notification data from the request
+  const notificationData = req.method === 'POST' ? req.body : req.query;
+  console.log('Notification data:', notificationData);
 
   // Check if the event is a payment
-  if (payment.type === 'payment') {
+  if (notificationData.type === 'payment') {
     try {
-      // Get payment data using the payment ID sent by Mercado Pago
-      const paymentData = await mercadopago.payment.get(payment.data.id);
+      // Get payment ID from the notification data
+      const paymentId = notificationData['data.id'] || notificationData['id'];
+      if (!paymentId) {
+        console.error('Payment ID not found in notification data.');
+        return res.status(400).json({ error: 'Payment ID not found' });
+      }
+
+      // Get payment data using the payment ID
+      const paymentResponse = await mercadopago.payment.get(paymentId);
+      const paymentData = paymentResponse.body;
 
       // Extract necessary information
-      const amount = paymentData.body.transaction_amount;
-      const status = paymentData.body.status;
+      const amount = paymentData.transaction_amount;
+      const status = paymentData.status;
 
-      console.log('Payment data received:', paymentData.body);
+      console.log('Payment data received from Mercado Pago API:', paymentData);
 
       // Extract userId from external_reference
-      const externalReference = paymentData.body.external_reference;
-      const userIdMatch = externalReference.match(/^DEP-(.+?)-\d+$/);
+      const externalReference = paymentData.external_reference;
+      const userIdMatch = externalReference ? externalReference.match(/^DEP-(.+?)-\d+$/) : null;
 
       if (!userIdMatch || !userIdMatch[1]) {
-        console.error('Invalid external_reference format:', externalReference);
-        return res.status(400).json({ error: 'Invalid external_reference format' });
+        console.error('Invalid or missing external_reference:', externalReference);
+        return res.status(400).json({ error: 'Invalid or missing external_reference' });
       }
 
       const userId = userIdMatch[1];
@@ -66,11 +76,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(500).json({ error: 'Error updating balance' });
         }
 
-        console.log(`User ${userId}'s balance successfully updated!`);
+        console.log(`User ${userId}'s balance successfully updated! New balance: ${novoSaldo}`);
       } else if (status === 'pending') {
         console.log(`Payment pending for user ${userId}. Awaiting confirmation.`);
       } else {
-        console.log(`Payment with status ${status} for user ${userId}.`);
+        console.log(`Payment with status "${status}" for user ${userId}.`);
       }
 
       // Return a successful response
@@ -80,6 +90,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       res.status(500).json({ error: 'Error processing payment in webhook' });
     }
   } else {
+    console.log('Event type is not payment:', notificationData.type);
     res.status(400).json({ error: 'Event type is not payment' });
   }
 }
