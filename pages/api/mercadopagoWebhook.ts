@@ -1,7 +1,10 @@
-import mercadopago from 'mercadopago';
+// pages/api/mercadopagoWebhook.ts
+
 import type { NextApiRequest, NextApiResponse } from 'next';
+import mercadopago from 'mercadopago';
 import { supabaseAdmin } from '../../utils/supabaseAdmin';
 
+// Configure Mercado Pago SDK
 mercadopago.configure({
   access_token: process.env.MERCADO_PAGO_ACCESS_TOKEN || '',
 });
@@ -9,25 +12,23 @@ mercadopago.configure({
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   console.log('Webhook received. Method:', req.method);
 
-  // Accept both POST and GET requests for testing purposes
   if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  // Parse notification data from the request
   const notificationData = req.method === 'POST' ? req.body : req.query;
   console.log('Notification data:', notificationData);
 
-  // Check if the event is a payment
+  // Extract Payment ID correctly
+  const paymentId = notificationData.data?.id || notificationData.id;
+
+  if (!paymentId) {
+    console.error('Payment ID not found in notification data.');
+    return res.status(400).json({ error: 'Payment ID not found' });
+  }
+
   if (notificationData.type === 'payment') {
     try {
-      // Get payment ID from the notification data
-      const paymentId = notificationData['data.id'] || notificationData['id'];
-      if (!paymentId) {
-        console.error('Payment ID not found in notification data.');
-        return res.status(400).json({ error: 'Payment ID not found' });
-      }
-
       // Get payment data using the payment ID
       const paymentResponse = await mercadopago.payment.get(paymentId);
       const paymentData = paymentResponse.body;
