@@ -59,10 +59,13 @@ const Main: React.FC = () => {
   const [showModal, setShowModal] = useState<boolean>(false);
   const [invitedUsers, setInvitedUsers] = useState<InvitedUser[]>([]);
   const [showDepositModal, setShowDepositModal] = useState<boolean>(false);
+  const [showQrCodeModal, setShowQrCodeModal] = useState<boolean>(false);
   const [depositAmount, setDepositAmount] = useState<string>('');
   const [showWithdrawalModal, setShowWithdrawalModal] = useState<boolean>(false);
   const [withdrawalAmount, setWithdrawalAmount] = useState<string>('');
   const [pixKey, setPixKey] = useState<string>('');
+  const [qrCodeBase64, setQrCodeBase64] = useState<string | null>(null);
+  const [pixCopiaCola, setPixCopiaCola] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -292,45 +295,44 @@ const Main: React.FC = () => {
   const confirmarDeposito = async () => {
     const amount = parseFloat(depositAmount);
 
-    if (isNaN(amount) || amount < 100) {
+    if (isNaN(amount) || amount < 1) {
       alert('O depósito mínimo é de R$ 100,00');
       return;
     }
 
-    if (userData && userId) {
-      const novoSaldo = userData.saldo_inicial + amount;
+    if (userId) {
+      try {
+        // Chamar a API para criar o pagamento
+        const response = await fetch('/api/createPayment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ amount, userId }),
+        });
 
-      // Atualizar saldo do usuário
-      const { error: updateError } = await supabase
-        .from('user_profile')
-        .update({ saldo_inicial: novoSaldo })
-        .eq('uuid', userId);
+        const data = await response.json();
 
-      if (updateError) {
-        console.error('Erro ao atualizar saldo do usuário:', updateError);
-      } else {
-        // Atualizar estado local
-        setUserData({ ...userData, saldo_inicial: novoSaldo });
-
-        // Registrar depósito (opcional)
-        const { error: insertError } = await supabase
-          .from('user_deposits')
-          .insert([
-            {
-              user_id: userId,
-              amount: amount,
-              date: new Date().toISOString(),
-            },
-          ]);
-
-        if (insertError) {
-          console.error('Erro ao registrar depósito:', insertError);
+        if (response.ok && data.qr_code_base64 && data.ticket_url) {
+          setQrCodeBase64(data.qr_code_base64);
+          setPixCopiaCola(data.ticket_url);
+          setShowDepositModal(false); // Fechar o primeiro modal
+          setShowQrCodeModal(true); // Abrir o segundo modal com QR code
+        } else {
+          alert('Erro ao criar o pagamento: ' + data.error);
         }
+      } catch (error) {
+        console.error('Erro ao processar o pagamento:', error);
+        alert('Ocorreu um erro ao processar o pagamento.');
       }
     }
-    setShowDepositModal(false);
   };
 
+
+
+  
+  
+  
   // Funções para o Saque
   const handleSaque = async () => {
     if (userAtivos.length === 0) {
@@ -678,6 +680,43 @@ const Main: React.FC = () => {
                 onClick={() => setShowDepositModal(false)}
               >
                 Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Segundo Modal para exibir o QR Code e Pix Copia e Cola */}
+      {showQrCodeModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-bold mb-4">Depósito via Pix</h2>
+            {qrCodeBase64 && (
+              <div>
+                <p>Escaneie o código QR abaixo para realizar o pagamento:</p>
+                <img
+                  src={`data:image/png;base64,${qrCodeBase64}`}
+                  alt="QR Code do Pix"
+                  className="my-4 mx-auto"
+                />
+              </div>
+            )}
+            {pixCopiaCola && (
+              <div className="mt-4">
+                <p>Ou copie o código Pix Copia e Cola:</p>
+                <textarea
+                  value={pixCopiaCola}
+                  readOnly
+                  className="w-full h-20 p-2 border border-gray-300 rounded mt-2"
+                />
+              </div>
+            )}
+            <div className="flex space-x-4 mt-4">
+              <button
+                className="bg-green-500 text-white px-4 py-2 rounded-lg"
+                onClick={() => setShowQrCodeModal(false)}
+              >
+                Fechar
               </button>
             </div>
           </div>

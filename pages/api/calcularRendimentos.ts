@@ -1,4 +1,3 @@
-// pages/api/calcularRendimentos.ts
 
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabaseAdmin } from '../../utils/supabaseAdmin';
@@ -10,7 +9,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'ID de usuário não fornecido.' });
   }
 
-  // Buscar ativos do usuário
   const { data: userAtivos, error: ativosError } = await supabaseAdmin
     .from('registros_main')
     .select('id, ativo, valor, rendimento_diario, data_compra, last_yield_calculated')
@@ -24,16 +22,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   let totalRendimento = 0;
 
   for (const ativo of userAtivos) {
-    let lastYieldDate = ativo.last_yield_calculated ? new Date(ativo.last_yield_calculated) : new Date(ativo.data_compra);
+
+    let lastYieldDate = ativo.last_yield_calculated
+      ? new Date(ativo.last_yield_calculated)
+      : new Date(ativo.data_compra);
+
     const currentDate = new Date();
 
-    // Evitar datas futuras
     if (lastYieldDate > currentDate) {
       lastYieldDate = currentDate;
     }
 
-    const timeDiff = currentDate.getTime() - lastYieldDate.getTime();
-    const daysSinceLastYield = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+    const daysSinceLastYield = Math.floor(
+      (currentDate.getTime() - lastYieldDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
     const rendimentoDiario = parseFloat(ativo.rendimento_diario);
 
@@ -41,10 +43,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const rendimento = rendimentoDiario * daysSinceLastYield;
       totalRendimento += rendimento;
 
-      // Atualizar last_yield_calculated
+      const newLastYieldDate = new Date(
+        lastYieldDate.getTime() + daysSinceLastYield * 24 * 60 * 60 * 1000
+      );
+
       const { error: updateAtivoError } = await supabaseAdmin
         .from('registros_main')
-        .update({ last_yield_calculated: currentDate.toISOString() })
+        .update({ last_yield_calculated: newLastYieldDate.toISOString() })
         .eq('id', ativo.id);
 
       if (updateAtivoError) {
@@ -53,7 +58,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
-  // Atualizar saldo do usuário
   const { data: userData, error: userError } = await supabaseAdmin
     .from('user_profile')
     .select('saldo_inicial')

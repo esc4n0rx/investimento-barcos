@@ -9,9 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@mercadopago/sdk-react": "^0.0.19",
     "@supabase/supabase-js": "^2.45.4",
     "framer-motion": "^11.11.9",
     "investimento-barcos": "file:",
+    "mercadopago": "^2.0.15",
     "next": "14.2.15",
     "nodemailer": "^6.9.15",
     "react": "^18",
