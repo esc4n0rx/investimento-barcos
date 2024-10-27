@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../utils/supabaseClient';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const RegisterForm: React.FC = () => {
   const router = useRouter();
@@ -99,7 +100,6 @@ const RegisterForm: React.FC = () => {
     }
 
     if (form.codigoConvite) {
-      // Encontrar o usuário que enviou o convite
       const { data: inviter, error: inviterError } = await supabase
         .from('user_profile')
         .select('*')
@@ -107,13 +107,12 @@ const RegisterForm: React.FC = () => {
         .single();
 
       if (inviter) {
-        // Atualizar o número de convites do usuário que enviou o convite
+
         await supabase
           .from('user_profile')
           .update({ convites: inviter.convites + 1 })
           .eq('convite_new', form.codigoConvite);
 
-        // Inserir na tabela user_convites
         await supabase
           .from('user_convites')
           .insert([
@@ -142,7 +141,12 @@ const RegisterForm: React.FC = () => {
 
   return (
     <form onSubmit={handleRegistro} className="space-y-4">
-      <h2 className="text-2xl font-bold text-center text-black">Registrar</h2>
+    <div className="flex flex-col items-center">
+      <Image src="/logo.png" alt="Logo Ocean Invest" width={60} height={60} />
+      <h1 className="text-2xl font-bold text-center text-black">Ocean Invest</h1>
+    </div>
+
+    <h2 className="text-xl font-semibold text-center text-black">Registrar</h2>
 
       {errors && <p className="text-red-500 text-sm">{errors}</p>}
 

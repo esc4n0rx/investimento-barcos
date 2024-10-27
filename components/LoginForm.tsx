@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../utils/supabaseClient';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const LoginForm: React.FC = () => {
   const router = useRouter();
@@ -28,7 +29,6 @@ const LoginForm: React.FC = () => {
 
     setLoading(true);
 
-    // Verificação manual de `telefone` e `senha`
     const { data: user, error } = await supabase
       .from('user_profile')
       .select('*')
@@ -41,10 +41,7 @@ const LoginForm: React.FC = () => {
       return;
     }
 
-    // Simulação de criação de um token JWT customizado (use uma função serverless para gerar tokens reais)
     const customToken = btoa(JSON.stringify({ user_id: user.uuid, telefone: user.telefone }));
-
-    // Armazena o token no local storage
     localStorage.setItem('auth_token', customToken);
 
     setLoading(false);
@@ -53,7 +50,12 @@ const LoginForm: React.FC = () => {
 
   return (
     <form onSubmit={handleLogin} className="space-y-4">
-      <h2 className="text-2xl font-bold text-center text-black">Login</h2>
+      <div className="flex flex-col items-center">
+        <Image src="/logo.png" alt="Logo Ocean Invest" width={60} height={60} />
+        <h1 className="text-2xl font-bold text-center text-black">Ocean Invest</h1>
+      </div>
+
+      <h2 className="text-xl font-semibold text-center text-black">Login</h2>
 
       {errors && <p className="text-red-500 text-sm">{errors}</p>}
 

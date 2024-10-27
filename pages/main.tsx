@@ -3,7 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../utils/supabaseClient';
-import { FaHome, FaChartLine, FaUserFriends, FaUser, FaSignOutAlt } from 'react-icons/fa';
+import {
+  FaHome,
+  FaChartLine,
+  FaUserFriends,
+  FaUser,
+  FaSignOutAlt,
+} from 'react-icons/fa';
 
 interface UserProfile {
   nome: string;
@@ -37,22 +43,28 @@ interface InvitedUser {
   rendimento: number;
 }
 
+interface Withdrawal {
+  id: number;
+  amount: number;
+  data: string; // Usando 'data' em vez de 'created_at'
+}
+
 const Main: React.FC = () => {
   const router = useRouter();
   const [userData, setUserData] = useState<UserProfile | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [userAtivos, setUserAtivos] = useState<PurchasedAtivo[]>([]);
-  const [ativos, setAtivos] = useState<Ativo[]>([
-    { id: 1, nome: 'Ativo 1', valor: 100, rendimento_diario: 'R$ 25.00' },
-    { id: 2, nome: 'Ativo 2', valor: 250, rendimento_diario: 'R$ 66.00' },
-    { id: 3, nome: 'Ativo 3', valor: 600, rendimento_diario: 'R$ 170.00' },
-    { id: 4, nome: 'Ativo 4', valor: 1400, rendimento_diario: 'R$ 630.00' },
-    { id: 5, nome: 'Ativo 5', valor: 1600, rendimento_diario: 'R$ 1000.00' },
-    { id: 6, nome: 'Ativo 6', valor: 2000, rendimento_diario: 'R$ 1560.00' },
-    { id: 7, nome: 'Ativo 7', valor: 2250, rendimento_diario: 'R$ 2000.00' },
-    { id: 8, nome: 'Ativo 8', valor: 2500, rendimento_diario: 'R$ 2350.00' },
-    { id: 9, nome: 'Ativo 9', valor: 3000, rendimento_diario: 'R$ 2230.00' },
-    { id: 10, nome: 'Ativo 10', valor: 3500, rendimento_diario: 'R$ 2450.00' },
+  const [ativos] = useState<Ativo[]>([
+    { id: 1, nome: 'Bote Inflável', valor: 100, rendimento_diario: 'R$ 25.00' },
+    { id: 2, nome: 'Lancha Esportiva', valor: 250, rendimento_diario: 'R$ 66.00' },
+    { id: 3, nome: 'Veleiro Clássico', valor: 600, rendimento_diario: 'R$ 170.00' },
+    { id: 4, nome: 'Escuna', valor: 1400, rendimento_diario: 'R$ 630.00' },
+    { id: 5, nome: 'Catamarã de Recreio', valor: 1600, rendimento_diario: 'R$ 1000.00' },
+    { id: 6, nome: 'Barco de Pesca Oceânica', valor: 2000, rendimento_diario: 'R$ 1560.00' },
+    { id: 7, nome: 'Iate de Luxo', valor: 2250, rendimento_diario: 'R$ 2000.00' },
+    { id: 8, nome: 'Iate Executivo', valor: 2500, rendimento_diario: 'R$ 2350.00' },
+    { id: 9, nome: 'Navio de Cruzeiro', valor: 3000, rendimento_diario: 'R$ 2230.00' },
+    { id: 10, nome: 'Super Iate', valor: 3500, rendimento_diario: 'R$ 2450.00' },
   ]);
   const [activeTab, setActiveTab] = useState<string>('home');
   const [selectedAtivo, setSelectedAtivo] = useState<Ativo | null>(null);
@@ -65,7 +77,9 @@ const Main: React.FC = () => {
   const [withdrawalAmount, setWithdrawalAmount] = useState<string>('');
   const [pixKey, setPixKey] = useState<string>('');
   const [qrCodeBase64, setQrCodeBase64] = useState<string | null>(null);
-  const [pixCopiaCola, setPixCopiaCola] = useState<string | null>(null);
+  const [paymentLink, setPaymentLink] = useState<string | null>(null);
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
+  const [showWithdrawalsModal, setShowWithdrawalsModal] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -79,7 +93,6 @@ const Main: React.FC = () => {
       const userId = decodedToken.user_id;
       setUserId(userId);
 
-      // Fetch user data
       const { data, error } = await supabase
         .from('user_profile')
         .select('nome, saldo_inicial, convites, convite_new, convite_ini, telefone, pix_key')
@@ -93,10 +106,8 @@ const Main: React.FC = () => {
         setUserData(data);
       }
 
-      // Fetch user's ativos
       await calcularRendimentos(userId);
 
-      // Fetch invited users
       const { data: convidados, error: convitesError } = await supabase
         .from('user_convites')
         .select('invited_user_nome, invited_user_telefone, rendimento')
@@ -128,8 +139,6 @@ const Main: React.FC = () => {
     if (userData && selectedAtivo && userId) {
       if (userData.saldo_inicial >= selectedAtivo.valor) {
         const novoSaldo = userData.saldo_inicial - selectedAtivo.valor;
-
-        // Atualizar saldo do usuário
         const { error: updateError } = await supabase
           .from('user_profile')
           .update({ saldo_inicial: novoSaldo })
@@ -142,15 +151,11 @@ const Main: React.FC = () => {
           return;
         }
 
-        // Converter rendimento_diario para número
         const rendimentoDiarioValor = parseFloat(
           selectedAtivo.rendimento_diario.replace('R$ ', '').replace(',', '.')
         );
-
-        // Formatar data_compra
         const dataCompra = new Date().toISOString().split('.')[0] + 'Z';
 
-        // Registrar compra
         const { error: insertError } = await supabase
           .from('registros_main')
           .insert([
@@ -170,20 +175,20 @@ const Main: React.FC = () => {
           return;
         }
 
-        // Atualizar estado local
         setUserData({ ...userData, saldo_inicial: novoSaldo });
-        setUserAtivos([...userAtivos, {
-          id: Date.now(), // Temporary ID, replace with actual ID from DB if needed
-          ativo: selectedAtivo.nome,
-          valor: selectedAtivo.valor,
-          rendimento_diario: rendimentoDiarioValor,
-          data_compra: dataCompra,
-        }]);
+        setUserAtivos([
+          ...userAtivos,
+          {
+            id: Date.now(),
+            ativo: selectedAtivo.nome,
+            valor: selectedAtivo.valor,
+            rendimento_diario: rendimentoDiarioValor,
+            data_compra: dataCompra,
+          },
+        ]);
 
-        // Recalcular rendimentos
         await calcularRendimentos(userId);
 
-        // Checar se é a primeira compra do usuário
         const { data: purchases, error: purchasesError } = await supabase
           .from('registros_main')
           .select('*')
@@ -192,10 +197,7 @@ const Main: React.FC = () => {
         if (purchasesError) {
           console.error('Erro ao verificar compras do usuário:', purchasesError);
         } else if (purchases.length === 1) {
-          // Primeira compra do usuário
-          // Verificar se o usuário foi convidado por alguém
           if (userData.convite_ini) {
-            // Obter dados do usuário que convidou
             const { data: inviterData, error: inviterError } = await supabase
               .from('user_profile')
               .select('uuid, saldo_inicial, convites')
@@ -205,7 +207,6 @@ const Main: React.FC = () => {
             if (inviterError || !inviterData) {
               console.error('Erro ao obter dados do usuário que convidou:', inviterError);
             } else {
-              // Verificar se o bônus já foi dado
               const { data: conviteRecord, error: conviteRecordError } = await supabase
                 .from('user_convites')
                 .select('*')
@@ -216,7 +217,6 @@ const Main: React.FC = () => {
               if (conviteRecordError || !conviteRecord) {
                 console.error('Erro ao verificar registro de convite:', conviteRecordError);
               } else if (!conviteRecord.bonus_given) {
-                // Contar quantos bônus já foram dados ao usuário que convidou
                 const { data: bonusesGiven, error: bonusesGivenError } = await supabase
                   .from('user_convites')
                   .select('*')
@@ -228,8 +228,6 @@ const Main: React.FC = () => {
                 } else {
                   const bonusPercentage = bonusesGiven.length === 0 ? 0.37 : 0.01;
                   const bonusAmount = selectedAtivo.valor * bonusPercentage;
-
-                  // Atualizar saldo do usuário que convidou
                   const novoSaldoInviter = inviterData.saldo_inicial + bonusAmount;
                   const novoConvites = (inviterData.convites || 0) + 1;
 
@@ -241,7 +239,6 @@ const Main: React.FC = () => {
                   if (updateInviterError) {
                     console.error('Erro ao atualizar saldo do usuário que convidou:', updateInviterError);
                   } else {
-                    // Marcar bônus como dado
                     const { error: updateConviteError } = await supabase
                       .from('user_convites')
                       .update({ bonus_given: true })
@@ -267,7 +264,6 @@ const Main: React.FC = () => {
 
   const calcularRendimentos = async (userId: string) => {
     if (userId) {
-      // Chamar API para calcular rendimentos
       const response = await fetch('/api/calcularRendimentos', {
         method: 'POST',
         headers: {
@@ -279,7 +275,9 @@ const Main: React.FC = () => {
       if (response.ok) {
         const result = await response.json();
         setUserAtivos(result.ativos);
-        setUserData((prevData) => prevData ? { ...prevData, saldo_inicial: result.novoSaldo } : null);
+        setUserData((prevData) =>
+          prevData ? { ...prevData, saldo_inicial: result.novoSaldo } : null
+        );
       } else {
         console.error('Erro ao calcular rendimentos');
       }
@@ -295,14 +293,13 @@ const Main: React.FC = () => {
   const confirmarDeposito = async () => {
     const amount = parseFloat(depositAmount);
 
-    if (isNaN(amount) || amount < 1) {
+    if (isNaN(amount) || amount < 100) {
       alert('O depósito mínimo é de R$ 100,00');
       return;
     }
 
     if (userId) {
       try {
-        // Chamar a API para criar o pagamento
         const response = await fetch('/api/createPayment', {
           method: 'POST',
           headers: {
@@ -315,9 +312,9 @@ const Main: React.FC = () => {
 
         if (response.ok && data.qr_code_base64 && data.ticket_url) {
           setQrCodeBase64(data.qr_code_base64);
-          setPixCopiaCola(data.ticket_url);
-          setShowDepositModal(false); // Fechar o primeiro modal
-          setShowQrCodeModal(true); // Abrir o segundo modal com QR code
+          setPaymentLink(data.ticket_url);
+          setShowDepositModal(false);
+          setShowQrCodeModal(true);
         } else {
           alert('Erro ao criar o pagamento: ' + data.error);
         }
@@ -328,12 +325,6 @@ const Main: React.FC = () => {
     }
   };
 
-
-
-  
-  
-  
-  // Funções para o Saque
   const handleSaque = async () => {
     if (userAtivos.length === 0) {
       alert('Você precisa ter pelo menos um ativo para realizar um saque.');
@@ -345,7 +336,6 @@ const Main: React.FC = () => {
       return;
     }
 
-    // Se o usuário já tiver uma chave PIX, carregue-a
     if (userData?.pix_key) {
       setPixKey(userData.pix_key);
     }
@@ -375,7 +365,6 @@ const Main: React.FC = () => {
     if (userData && userId) {
       const novoSaldo = userData.saldo_inicial - amount;
 
-      // Atualizar saldo do usuário e salvar chave PIX
       const { error: updateError } = await supabase
         .from('user_profile')
         .update({ saldo_inicial: novoSaldo, pix_key: pixKey })
@@ -387,10 +376,8 @@ const Main: React.FC = () => {
         setShowWithdrawalModal(false);
         return;
       } else {
-        // Atualizar estado local
         setUserData({ ...userData, saldo_inicial: novoSaldo, pix_key: pixKey });
 
-        // Registrar pedido de saque
         const { error: insertError } = await supabase
           .from('registros_saque')
           .insert([
@@ -400,6 +387,7 @@ const Main: React.FC = () => {
               telefone: userData.telefone,
               pix_key: pixKey,
               amount: amount,
+              data: new Date().toISOString(), 
             },
           ]);
 
@@ -410,7 +398,6 @@ const Main: React.FC = () => {
           return;
         }
 
-        // Enviar email de notificação
         const response = await fetch('/api/processWithdrawal', {
           method: 'POST',
           headers: {
@@ -435,9 +422,23 @@ const Main: React.FC = () => {
     setShowWithdrawalModal(false);
   };
 
-  // Componentes de Conteúdo
+  const fetchWithdrawals = async () => {
+    if (userId) {
+      const { data, error } = await supabase
+        .from('registros_saque')
+        .select('id, amount, data')
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Erro ao buscar retiradas:', error);
+      } else {
+        setWithdrawals(data || []);
+        setShowWithdrawalsModal(true);
+      }
+    }
+  };
+
   const HomeContent = () => {
-    // Agrupar ativos por nome e contar quantas vezes foram comprados
     const ativosAgrupados = userAtivos.reduce((acc, ativo) => {
       if (!acc[ativo.ativo]) {
         acc[ativo.ativo] = {
@@ -461,15 +462,26 @@ const Main: React.FC = () => {
 
         <div className="bg-white bg-opacity-30 backdrop-blur-md rounded-lg p-6 w-full max-w-2xl mb-4">
           <h3 className="text-lg font-bold text-center text-black">Resumo Financeiro</h3>
-          <p className="text-black">Saldo Atual: <span className="font-semibold">R$ {userData?.saldo_inicial.toFixed(2) || '0,00'}</span></p>
-          <p className="text-black">Usuários Convidados: <span className="font-semibold">{userData?.convites || '0'}</span></p>
+          <p className="text-black">
+            Saldo Atual:{' '}
+            <span className="font-semibold">
+              R$ {userData?.saldo_inicial.toFixed(2) || '0,00'}
+            </span>
+          </p>
+          <p className="text-black">
+            Usuários Convidados:{' '}
+            <span className="font-semibold">{userData?.convites || '0'}</span>
+          </p>
         </div>
 
         {Object.keys(ativosAgrupados).length > 0 ? (
           <div className="bg-white bg-opacity-30 backdrop-blur-md rounded-lg p-4 w-full max-w-2xl">
             <h3 className="text-lg font-bold text-center text-black">Seus Ativos</h3>
             {Object.values(ativosAgrupados).map((ativo, index) => (
-              <div key={index} className="flex justify-between items-center bg-gray-100 p-4 rounded-lg shadow-md w-full max-w-md mx-auto">
+              <div
+                key={index}
+                className="flex justify-between items-center bg-gray-100 p-4 rounded-lg shadow-md w-full max-w-md mx-auto"
+              >
                 <div>
                   <h4 className="font-bold">{ativo.ativo}</h4>
                   <p>Quantidade: {ativo.quantidade}</p>
@@ -484,9 +496,54 @@ const Main: React.FC = () => {
         ) : (
           <div className="bg-white bg-opacity-30 backdrop-blur-md rounded-lg p-4 w-full max-w-2xl">
             <h3 className="text-lg font-bold text-center text-black">FAQ</h3>
-            <p className="text-sm text-black">
+            <p className="text-sm text-black mb-4">
               Saiba como investir de forma segura e lucrativa com nossa plataforma!
             </p>
+            <div className="text-black text-sm space-y-4">
+              <div>
+                <h4 className="font-bold">1. Como faço um depósito?</h4>
+                <p>
+                  Para fazer um depósito, vá até a seção "Configurações da Conta" e clique em
+                  "Depositar". Informe o valor que deseja depositar (mínimo de R$ 100,00) e siga as instruções na tela.
+                </p>
+              </div>
+              <div>
+                <h4 className="font-bold">2. Como posso comprar ativos?</h4>
+                <p>
+                  Na aba "Ativos", você encontrará uma lista de ativos disponíveis. Clique em "Comprar" no ativo desejado e confirme a compra.
+                </p>
+              </div>
+              <div>
+                <h4 className="font-bold">3. Como são calculados os rendimentos?</h4>
+                <p>
+                  Os rendimentos são calculados diariamente com base no rendimento diário de cada ativo que você possui. Eles são adicionados ao seu saldo automaticamente.
+                </p>
+              </div>
+              <div>
+                <h4 className="font-bold">4. Como realizo um saque?</h4>
+                <p>
+                  Vá até "Configurações da Conta" e clique em "Saque". Informe o valor que deseja sacar (mínimo de R$ 45,00) e sua chave PIX. Seu saque será processado em até 24 horas.
+                </p>
+              </div>
+              <div>
+                <h4 className="font-bold">5. Como funciona o sistema de convites?</h4>
+                <p>
+                  Convide amigos usando seu link único na aba "Convites". Você receberá um bônus de 37% do valor investido pelo primeiro amigo que se cadastrar e realizar um investimento, e 1% para os próximos.
+                </p>
+              </div>
+              <div>
+                <h4 className="font-bold">6. Onde posso ver meu histórico de retiradas?</h4>
+                <p>
+                  Em "Configurações da Conta", clique em "Histórico de Retiradas" para visualizar todas as suas solicitações de saque.
+                </p>
+              </div>
+              <div>
+                <h4 className="font-bold">7. Como posso entrar em contato com o suporte?</h4>
+                <p>
+                  Para suporte, entre em contato conosco através do e-mail suporte@boatvest.com ou pelo nosso canal de atendimento no aplicativo.
+                </p>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -495,16 +552,26 @@ const Main: React.FC = () => {
 
   const AtivosContent = () => (
     <div>
-      <h3 className="text-lg font-bold text-center text-black mb-4">Ativos Disponíveis</h3>
+      <h3 className="text-lg font-bold text-center text-black mb-4">
+        Ativos Disponíveis
+      </h3>
       <p className="text-center text-sm text-black mb-4">
-        Escolha entre os melhores ativos disponíveis e comece a investir para obter rendimentos diários!
+        Escolha entre os melhores ativos disponíveis e comece a investir para obter
+        rendimentos diários!
       </p>
       <div className="space-y-4">
         {ativos.map((ativo) => (
-          <div key={ativo.id} className="flex justify-between items-center bg-gray-100 p-4 rounded-lg shadow-md w-full max-w-md mx-auto">
+          <div
+            key={ativo.id}
+            className="flex justify-between items-center bg-gray-100 p-4 rounded-lg shadow-md w-full max-w-md mx-auto"
+          >
             <div className="flex items-center space-x-4">
               <div className="w-20 h-20 bg-gray-300 rounded-full shadow-lg overflow-hidden">
-                <img src={`/ativo${ativo.id}.jpg`} alt={ativo.nome} className="object-cover w-full h-full" />
+                <img
+                  src={`/ativo${ativo.id}.jpg`}
+                  alt={ativo.nome}
+                  className="object-cover w-full h-full"
+                />
               </div>
               <div>
                 <h4 className="font-bold">{ativo.nome}</h4>
@@ -513,7 +580,10 @@ const Main: React.FC = () => {
             </div>
             <div className="text-right">
               <p>Valor: R$ {ativo.valor.toFixed(2)}</p>
-              <button className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg" onClick={() => handleComprar(ativo)}>
+              <button
+                className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-lg"
+                onClick={() => handleComprar(ativo)}
+              >
                 Comprar
               </button>
             </div>
@@ -527,12 +597,11 @@ const Main: React.FC = () => {
     <div>
       <h3 className="text-lg font-bold text-center text-black">Convide Amigos</h3>
       <p className="text-center text-sm text-black mb-4">
-        Convide seus amigos e ganhe rendimentos adicionais!
-        Cada amigo seu que depositar e investir em nossa plataforma, você vai receber um bônus de 37% do valor investido!
+        Convide seus amigos e ganhe rendimentos adicionais! Cada amigo seu que depositar
+        e investir em nossa plataforma, você vai receber um bônus de 37% do valor
+        investido!
       </p>
-      <p className="text-black mb-2">
-        Seu link de convite:
-      </p>
+      <p className="text-black mb-2">Seu link de convite:</p>
       <div className="bg-gray-100 p-2 rounded mb-4">
         <p className="text-blue-500">{`https://boatvest.vercel.app/register?codigoConvite=${userData?.convite_new}`}</p>
       </div>
@@ -565,9 +634,18 @@ const Main: React.FC = () => {
     <div>
       <h3 className="text-lg font-bold text-center text-black">Configurações da Conta</h3>
       <div className="flex flex-col space-y-3 mt-5">
-        <button className="bg-blue-500 text-white p-2 rounded" onClick={handleDepositar}>Depositar</button>
-        <button className="bg-blue-500 text-white p-2 rounded" onClick={handleSaque}>Saque</button>
-        <button className="bg-blue-500 text-white p-2 rounded">Histórico de Retiradas</button>
+        <button className="bg-blue-500 text-white p-2 rounded" onClick={handleDepositar}>
+          Depositar
+        </button>
+        <button className="bg-blue-500 text-white p-2 rounded" onClick={handleSaque}>
+          Saque
+        </button>
+        <button
+          className="bg-blue-500 text-white p-2 rounded"
+          onClick={fetchWithdrawals}
+        >
+          Histórico de Retiradas
+        </button>
       </div>
     </div>
   );
@@ -586,7 +664,10 @@ const Main: React.FC = () => {
       <div className="fixed bottom-0 w-full max-w-2xl flex justify-around bg-red-500 bg-opacity-80 p-3 rounded-t-xl">
         <FaHome className="text-white text-2xl" onClick={() => setActiveTab('home')} />
         <FaChartLine className="text-white text-2xl" onClick={() => setActiveTab('ativos')} />
-        <FaUserFriends className="text-white text-2xl" onClick={() => setActiveTab('convites')} />
+        <FaUserFriends
+          className="text-white text-2xl"
+          onClick={() => setActiveTab('convites')}
+        />
         <FaUser className="text-white text-2xl" onClick={() => setActiveTab('conta')} />
         <FaSignOutAlt className="text-white text-2xl" onClick={handleLogout} />
       </div>
@@ -596,7 +677,9 @@ const Main: React.FC = () => {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <h2 className="text-xl font-bold mb-4">Confirmar Compra</h2>
-            <p>Você deseja comprar o {selectedAtivo.nome} por R$ {selectedAtivo.valor.toFixed(2)}?</p>
+            <p>
+              Você deseja comprar o {selectedAtivo.nome} por R$ {selectedAtivo.valor.toFixed(2)}?
+            </p>
             <div className="flex space-x-4 mt-4">
               <button
                 className="bg-green-500 text-white px-4 py-2 rounded-lg"
@@ -686,7 +769,7 @@ const Main: React.FC = () => {
         </div>
       )}
 
-      {/* Segundo Modal para exibir o QR Code e Pix Copia e Cola */}
+      {/* Modal de QR Code e Link de Pagamento */}
       {showQrCodeModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg">
@@ -701,20 +784,57 @@ const Main: React.FC = () => {
                 />
               </div>
             )}
-            {pixCopiaCola && (
+            {paymentLink && (
               <div className="mt-4">
-                <p>Ou copie o código Pix Copia e Cola:</p>
-                <textarea
-                  value={pixCopiaCola}
-                  readOnly
-                  className="w-full h-20 p-2 border border-gray-300 rounded mt-2"
-                />
+                <button
+                  className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+                  onClick={() => window.open(paymentLink, '_blank')}
+                >
+                  Ir para o pagamento
+                </button>
               </div>
             )}
             <div className="flex space-x-4 mt-4">
               <button
                 className="bg-green-500 text-white px-4 py-2 rounded-lg"
                 onClick={() => setShowQrCodeModal(false)}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Histórico de Retiradas */}
+      {showWithdrawalsModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 overflow-auto">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
+            <h2 className="text-xl font-bold mb-4">Histórico de Retiradas</h2>
+            {withdrawals.length > 0 ? (
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    <th className="text-left">Data</th>
+                    <th className="text-left">Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {withdrawals.map((withdrawal) => (
+                    <tr key={withdrawal.id}>
+                      <td>{new Date(withdrawal.data).toLocaleDateString()}</td>
+                      <td>R$ {withdrawal.amount.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p>Você ainda não possui retiradas.</p>
+            )}
+            <div className="flex justify-end mt-4">
+              <button
+                className="bg-red-500 text-white px-4 py-2 rounded-lg"
+                onClick={() => setShowWithdrawalsModal(false)}
               >
                 Fechar
               </button>
