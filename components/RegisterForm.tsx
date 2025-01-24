@@ -88,7 +88,7 @@ const RegisterForm: React.FC = () => {
         senha: form.senha, 
         convite_ini: form.codigoConvite || null,
         convite_new: novoConvite,
-        saldo_inicial: 0,
+        saldo_inicial: 50,
         convites: 0,
       },
     ]).single();
