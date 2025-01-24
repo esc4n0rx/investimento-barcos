@@ -55,7 +55,7 @@ const Main: React.FC = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [userAtivos, setUserAtivos] = useState<PurchasedAtivo[]>([]);
   const [ativos] = useState<Ativo[]>([
-    { id: 1, nome: 'Bote Inflável', valor: 100, rendimento_diario: 'R$ 25.00' },
+    { id: 1, nome: 'Bote Inflável', valor: 70, rendimento_diario: 'R$ 15.00' },
     { id: 2, nome: 'Lancha Esportiva', valor: 250, rendimento_diario: 'R$ 66.00' },
     { id: 3, nome: 'Veleiro Clássico', valor: 600, rendimento_diario: 'R$ 170.00' },
     { id: 4, nome: 'Escuna', valor: 1400, rendimento_diario: 'R$ 630.00' },
@@ -603,7 +603,7 @@ const Main: React.FC = () => {
       </p>
       <p className="text-black mb-2">Seu link de convite:</p>
       <div className="bg-gray-100 p-2 rounded mb-4">
-        <p className="text-blue-500">{`https://boatvest.vercel.app/register?codigoConvite=${userData?.convite_new}`}</p>
+        <p className="text-blue-500">{`https://boat-invest.vercel.app/register?codigoConvite=${userData?.convite_new}`}</p>
       </div>
       <div className="bg-gray-100 p-2 rounded mt-4">
         <p>1º convite gera 37% de bônus</p>
