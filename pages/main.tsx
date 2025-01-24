@@ -703,6 +703,9 @@ const Main: React.FC = () => {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <h2 className="text-xl font-bold mb-4">Solicitar Saque</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Seu saque será analisado para confirmar convites e depósitos antes de ser liberado.
+            </p>
             <p>Informe o valor que deseja sacar (Mínimo R$ 45,00):</p>
             <input
               type="number"
