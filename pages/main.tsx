@@ -293,8 +293,8 @@ const Main: React.FC = () => {
   const confirmarDeposito = async () => {
     const amount = parseFloat(depositAmount);
 
-    if (isNaN(amount) || amount < 100) {
-      alert('O depósito mínimo é de R$ 100,00');
+    if (isNaN(amount) || amount < 70) {
+      alert('O depósito mínimo é de R$ 70,00');
       return;
     }
 
@@ -742,10 +742,10 @@ const Main: React.FC = () => {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg">
             <h2 className="text-xl font-bold mb-4">Fazer Depósito</h2>
-            <p>Informe o valor que deseja depositar (Mínimo R$ 100,00):</p>
+            <p>Informe o valor que deseja depositar (Mínimo R$ 70,00):</p>
             <input
               type="number"
-              min="100"
+              min="70"
               step="0.01"
               value={depositAmount}
               onChange={(e) => setDepositAmount(e.target.value)}
